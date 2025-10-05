@@ -1,0 +1,80 @@
+##########################################################################################
+### Snakemake to extract IVs from UKB-PPP tsv.gz cis #####################################
+########################################################################################## 
+
+################################################
+### Importing libraries ########################
+import numpy as np
+import pandas as pd
+
+################################################
+### Setting paths  and parameters ##############
+
+# CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P EXTRA
+path_to_sumstat = "/.../"
+# UKBPPP_ProteinID	olink_target_fullname	OlinkID	UniProt	Assay	Panel	Panel_Lot_Nr	
+# UniProt2	HGNC.symbol	ensembl_id	chr	gene_start	gene_end	Strand	Dilution_factor	block	expansion	rel_path
+path_to_protein_annotation = "/.../protein_annotation_3k_RP.tsv"
+# ID	REF	ALT	rsid	POS19	POS38
+path_to_snp_info = "/.../"
+# Preffered output path
+path_to_output = "/.../"
+# UK10K data
+path_to_uk10k = "/.../uk10k.autosomal"
+
+### Read tsv file with following columns: 
+prot_annot = pd.read_csv(path_to_protein_annotation, sep = "\t")
+proteins = list(prot_annot.UKBPPP_ProteinID)
+path_dic = prot_annot.set_index("UKBPPP_ProteinID")["rel_path"].to_dict()
+chr_prot = prot_annot.set_index("UKBPPP_ProteinID")["chr"].to_dict()
+gene_start = prot_annot.set_index("UKBPPP_ProteinID")["gene_start"].to_dict()
+
+################################################
+### Rules #####################################
+rule all:
+    input:
+        expand(path_to_output + "{prot}_CISchr_gwas_uk10kck.ma", prot = proteins)
+
+rule format_ma:
+    input:
+        snp_info = lambda wildcards: path_to_snp_info + "olink_rsid_map_mac5_info03_b0_7_chr" +  str(chr_prot[wildcards.prot]) + "_patched_v2.tsv.gz"
+    params: 
+        path = lambda wildcards: path_to_sumstat + path_dic[wildcards.prot],
+        gene_start = lambda wildcards: gene_start[wildcards.prot]
+    output:
+        format_sumstat = temp(path_to_output + "{prot}_CISchr_gwas.ma")
+    resources:
+        time="00:10:00",
+        nodes=1,
+        cpus=1,
+        mem="8GB"
+    script:
+        "scripts/02_format_sumstat.py"
+
+rule variant_check:
+    input: 
+        gwas = path_to_output + "{prot}_CISchr_gwas.ma"
+    params:
+        uk10k = path_to_uk10k,
+        bim_file = "{prot}_snps_uk10k"
+    output:
+        out = path_to_output + "{prot}_CISchr_gwas_uk10kck.ma",
+        snps = temp("snps_{prot}"),
+        bim_file = temp("{prot}_snps_uk10k.bim"),
+        log = temp("{prot}_snps_uk10k.log"),
+        nosex = temp("{prot}_snps_uk10k.nosex")
+    resources:
+        time="00:20:00",
+        nodes=1,
+        cpus=1,
+        mem="8GB"
+    shell:
+        """
+        awk '{{print $1}}' {input.gwas} > {output.snps}
+
+        plink --bfile {params.uk10k} --extract {output.snps} --out {params.bim_file} --make-just-bim 
+
+        python3 scripts/03_strand_check.py -g {input.gwas} -r {output.bim_file} -o {output.out}
+
+        """
+

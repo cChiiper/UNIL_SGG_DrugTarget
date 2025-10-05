@@ -1,0 +1,151 @@
+##########################################################################################
+### Run MR .ma format with IVs from UKB-PPP cis ##########################################
+########################################################################################## 
+
+################################################
+### Importing libraries ########################
+import numpy as np
+import pandas as pd
+
+################################################
+### Setting paths  and parameters ##############
+
+# SNP	A1	A2	Freq	b	se	p	N	POS38
+path_to_exposure = "/.../" # Path to summary (.ma) files from 01_Get_IVs
+path_to_outcome = "/.../" # Path to outcome summary (.ma) files
+# UKBPPP_ProteinID	olink_target_fullname	OlinkID	UniProt	Assay	Panel	Panel_Lot_Nr	
+# UniProt2	HGNC.symbol	ensembl_id	chr	gene_start	gene_end	Strand	Dilution_factor	block	expansion	rel_path
+path_to_protein_annotation = "/.../protein_annotation_3k_RP.tsv"
+# Preffered output path
+path_to_output = "/.../{outcome_trait}/{expo_trait}_to_{outcome_trait}/"
+path_to_expo_snps = "/.../" # Path were IVs will be stored (only computed first time)
+# UK10K data
+path_to_uk10k = "/.../uk10k.autosomal"
+# HLA snps file (should be rerun with the updated file for LDL)
+path_to_HLA_snps = "/.../HLA_uk10k_rsids.txt" # File with HLA region SNPs to exclude
+
+### Read tsv file with following columns: 
+prot_annot = pd.read_csv(path_to_protein_annotation, sep = "\t")
+proteins = list(prot_annot.UKBPPP_ProteinID)
+# path_dic = prot_annot.set_index("UKBPPP_ProteinID")["rel_path"].to_dict() # Not used
+chr_prot = prot_annot.set_index("UKBPPP_ProteinID")["chr"].to_dict()
+gs_dic = prot_annot.set_index("UKBPPP_ProteinID")["gene_start"].to_dict()
+ge_dic = prot_annot.set_index("UKBPPP_ProteinID")["gene_end"].to_dict()
+
+### Remove proteins without pQTLs
+# Read the no_pQTL_proteins.txt file and create a list of IDs to remove
+with open('/.../no_pQTL_proteins.txt', 'r') as file:
+    no_pqtl_proteins = [line.strip() for line in file]
+proteins = [protein for protein in proteins if protein not in no_pqtl_proteins]
+
+################################################
+### Rules #####################################
+# OUTCOME_TRAITS = ["LDL", "DBP", "SBP", "HbA1c", "GLUC", "TELOMERE"]
+# "LOAD_consortium", "AD", "AF", "ASTHMA", "BIPOLAR", "BMD", "CAD_consortium", "COPD_FIG_UKBB", "DBP_meta", "eGFR", "EPILEPSY", "ENDOMETRIOSIS_FIG_UKBB", "GLAUCOMA", "IBD_consortium"
+# "IBS", "LDL", "MDD", "MS", "OA", "PD", "PNEUMONIA_FIG_UKBB", "PSORIASIS_FIG_UKBB", "RA_consortium", "SBP_meta", "SCZ_consortium", "STROKE", "T1D", "T2D", "TC", "VTE_UKBB"
+# OUTCOME_TRAITS = ["IBS", "LDL", "MDD", "MS", "OA", "PD", "PNEUMONIA_FIG_UKBB", "PSORIASIS_FIG_UKBB", "RA_consortium", "SBP_meta", "SCZ_consortium", "STROKE", "T1D", "T2D", "TC", "VTE_UKBB"]
+OUTCOME_TRAITS = ["LOAD_consortium", "AD", "AF", "ASTHMA", "BIPOLAR", "BMD", "CAD_consortium", "COPD_FIG_UKBB", "DBP_meta", "eGFR", "EPILEPSY", "ENDOMETRIOSIS_FIG_UKBB", "GLAUCOMA", "IBD_consortium",
+                  "IBS", "LDL", "MDD", "MS", "OA", "PD", "PNEUMONIA_FIG_UKBB", "PSORIASIS_FIG_UKBB", "RA_consortium", "SBP_meta", "SCZ_consortium", "STROKE", "T1D", "T2D", "TC", "VTE_UKBB"]
+
+rule all:
+    input:
+        expand(path_to_output + "{expo_trait}_to_{outcome_trait}_TSMR_result.tsv", expo_trait = proteins, outcome_trait = OUTCOME_TRAITS)
+
+rule select_gwas_snps:
+    input:
+        path_to_exposure + "{expo_trait}_CISchr_gwas_uk10kck.ma"
+    output:
+        path_to_expo_snps + "{expo_trait}_cis_snps.txt"
+    params:
+        gene_start_par = lambda wildcards: gs_dic[wildcards.expo_trait],
+        gene_end_par = lambda wildcards: ge_dic[wildcards.expo_trait]
+    resources:
+        time="00:05:00",
+        nodes=1,
+        cpus=1,
+        mem="1GB"
+    shell: # put 1e-6 instead of 5e-8 as in cis. 
+        """
+        awk -v geneStart={params.gene_start_par} -v geneEnd={params.gene_end_par} -v OFS='\\t' '
+            ($7 <= 1e-6) && ($9 >= (geneStart - 1000000)) && ($9 <= (geneEnd + 1000000)) {{
+                print $1
+            }}' {input} > {output}
+        """
+
+rule harmonize_and_clump_snps:
+    input:
+        expo_gwas = path_to_exposure + "{expo_trait}_CISchr_gwas_uk10kck.ma",
+        outcome_gwas = path_to_outcome + "{outcome_trait}_gwas_summary_uk10kck.ma",
+        expo_snps = path_to_expo_snps + "{expo_trait}_cis_snps.txt"
+    params:
+        bfile = path_to_uk10k,
+        out = path_to_output + "{expo_trait}_to_{outcome_trait}_clump"
+    output:
+        harmo_snps = temp(path_to_output + "{expo_trait}_to_{outcome_trait}_snps.txt"),
+        clump_input = temp(path_to_output + "{expo_trait}_to_{outcome_trait}_snp_pval.txt"),
+        clump_output = temp(path_to_output + "{expo_trait}_to_{outcome_trait}_clump.clumped"),
+        clump_log = temp(path_to_output + "{expo_trait}_to_{outcome_trait}_clump.log"),
+        clump_nosex = temp(path_to_output + "{expo_trait}_to_{outcome_trait}_clump.nosex"),
+        clumped_expo_snps = path_to_output + "{expo_trait}_to_{outcome_trait}_clumped_snps.txt"
+    resources:
+        time="00:10:00",
+        nodes=1,
+        cpus=1,
+        mem="8GB"
+    shell: # Changed the clump r2 to 0.001 and window to 500kb
+        """
+        python scripts/harmonize_snps_PPP.py --outcome_gwas {input.outcome_gwas} --expo_snps {input.expo_snps} --harmo_snps {output.harmo_snps}
+
+        awk {{'print $1"\t"$7'}} {input.expo_gwas} > {output.clump_input}
+
+        plink --bfile {params.bfile} --extract {output.harmo_snps} --clump {output.clump_input} --clump-r2 0.001 --clump-kb 500 --clump-field 'p' --out {params.out} 
+
+        awk '$3 ~ /^rs/ {{print $3 }}' {output.clump_output} > {output.clumped_expo_snps}
+        """
+
+rule prepare_MR_data:
+    input:
+        expo_df = path_to_exposure + "{expo_trait}_CISchr_gwas_uk10kck.ma",
+        outcome_df = path_to_outcome + "{outcome_trait}_gwas_summary_uk10kck.ma",
+        snps = path_to_output + "{expo_trait}_to_{outcome_trait}_clumped_snps.txt"
+    output:
+        merged_df = path_to_output + "{expo_trait}_to_{outcome_trait}_MR_data.tsv"
+    resources:
+        time="00:10:00",
+        nodes=1,
+        cpus=1,
+        mem="10GB"
+    shell:
+        """
+        Rscript_user scripts/prepare_MR_data.R \
+            -e_f {input.expo_df} \
+            -o_f {input.outcome_df} \
+            -s_f {input.snps} \
+            -o {output.merged_df}
+        """
+
+
+
+# Rule to process the files
+rule process_mr_data:
+    input:
+        mr_data = path_to_output + "{expo_trait}_to_{outcome_trait}_MR_data.tsv",
+        HLA_snps = path_to_HLA_snps
+    output:
+        mr_result = path_to_output + "{expo_trait}_to_{outcome_trait}_TSMR_result.tsv",
+        mr_plots = path_to_output + "{expo_trait}_to_{outcome_trait}_TSMR_result_plots.pdf"
+    resources:
+        time="00:10:00",
+        nodes=1,
+        cpus=1,
+        mem="4GB"
+    shell:
+        """
+        Rscript_user scripts/run_TSMR.R \
+            -mr_f {input.mr_data} \
+            -hla_f {input.HLA_snps} \
+            -o_f {output.mr_result} \
+            -plot_f {output.mr_plots} \
+            -exp_par {wildcards.expo_trait} \
+            -out_par {wildcards.outcome_trait}
+        """
