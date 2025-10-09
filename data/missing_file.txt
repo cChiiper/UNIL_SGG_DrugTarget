@@ -1,2 +1,0 @@
-HLA snps
-no pQTLs file

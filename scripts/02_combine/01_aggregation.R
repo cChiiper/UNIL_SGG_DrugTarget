@@ -58,12 +58,12 @@ INCLUDED_DATA <- c("p_rank_GWAS", "p_rank_exome", "p_rank_eQTL_GWAS_blood")
 
 ### Path to files from Sadler et al 2023 DOI: 10.1016/j.xgen.2023.100341 
 path_to_sadler <- "/.../"
-### Path to MR results with UK Biobank Pharma Proteomics Project data (See Supplementary Table 16 to directly get p-values)
+### Path to MR results with UK Biobank Pharma Proteomics Project data (See Supplementary Table 16 to directly get p-values or run pipeline in the  01_MR folder)
 path_to_MR_data <- "/.../"
-### Path to drug targets from Sadler et al 2023 DOI: 10.1016/j.xgen.2023.100341 converted to hgnc (if empty "" it will be computed here)
+### Path to drug targets from Sadler et al 2023 DOI: 10.1016/j.xgen.2023.100341 converted to hgnc (if empty "" it will be mapped here)
 path_to_hgnc_DT <- "/.../"
 ### Path to target genes from The Therapeutic Target Database (TTD)
-path_to_TTD <- "/.../target_genes_TTD.csv"
+path_to_TTD <- "/.../target_genes_TTD.csv" # See data folder
 ### Path to output folder
 path_to_output <- "/.../"
 

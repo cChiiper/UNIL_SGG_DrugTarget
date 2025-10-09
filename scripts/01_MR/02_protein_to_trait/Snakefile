@@ -1,5 +1,7 @@
 ##########################################################################################
 ### Run MR .ma format with IVs from UKB-PPP cis ##########################################
+### Author: S. Moix, DBC, UNIL, 2025 #####################################################
+### Date: October 2025 ###################################################################
 ########################################################################################## 
 
 ################################################
@@ -12,17 +14,17 @@ import pandas as pd
 
 # SNP	A1	A2	Freq	b	se	p	N	POS38
 path_to_exposure = "/.../" # Path to summary (.ma) files from 01_Get_IVs
-path_to_outcome = "/.../" # Path to outcome summary (.ma) files
+path_to_outcome = "/.../" # Path to outcome summary (.ma) files | See supplamental tables or https://doi.org/10.1016/j.xgen.2023.100341
 # UKBPPP_ProteinID	olink_target_fullname	OlinkID	UniProt	Assay	Panel	Panel_Lot_Nr	
 # UniProt2	HGNC.symbol	ensembl_id	chr	gene_start	gene_end	Strand	Dilution_factor	block	expansion	rel_path
-path_to_protein_annotation = "/.../protein_annotation_3k_RP.tsv"
+path_to_protein_annotation = "/.../protein_annotation_3k_RP.tsv" # Output from 01_Get_IVs/scripts/01_relative_path.py
 # Preffered output path
-path_to_output = "/.../{outcome_trait}/{expo_trait}_to_{outcome_trait}/"
+path_to_output = "/.../{outcome_trait}/{expo_trait}_to_{outcome_trait}/" # Path were MR results will be stored
 path_to_expo_snps = "/.../" # Path were IVs will be stored (only computed first time)
 # UK10K data
-path_to_uk10k = "/.../uk10k.autosomal"
+path_to_uk10k = "/.../uk10k.autosomal" 
 # HLA snps file (should be rerun with the updated file for LDL)
-path_to_HLA_snps = "/.../HLA_uk10k_rsids.txt" # File with HLA region SNPs to exclude
+path_to_HLA_snps = "/.../HLA_uk10k_rsids.txt" # File with HLA region SNPs to exclude (see data folder)
 
 ### Read tsv file with following columns: 
 prot_annot = pd.read_csv(path_to_protein_annotation, sep = "\t")
@@ -34,16 +36,13 @@ ge_dic = prot_annot.set_index("UKBPPP_ProteinID")["gene_end"].to_dict()
 
 ### Remove proteins without pQTLs
 # Read the no_pQTL_proteins.txt file and create a list of IDs to remove
-with open('/.../no_pQTL_proteins.txt', 'r') as file:
+with open('/.../no_pQTL_proteins.txt', 'r') as file: # File with proteins without valide pQTL instrument (see data folder)
     no_pqtl_proteins = [line.strip() for line in file]
 proteins = [protein for protein in proteins if protein not in no_pqtl_proteins]
 
 ################################################
 ### Rules #####################################
-# OUTCOME_TRAITS = ["LDL", "DBP", "SBP", "HbA1c", "GLUC", "TELOMERE"]
-# "LOAD_consortium", "AD", "AF", "ASTHMA", "BIPOLAR", "BMD", "CAD_consortium", "COPD_FIG_UKBB", "DBP_meta", "eGFR", "EPILEPSY", "ENDOMETRIOSIS_FIG_UKBB", "GLAUCOMA", "IBD_consortium"
-# "IBS", "LDL", "MDD", "MS", "OA", "PD", "PNEUMONIA_FIG_UKBB", "PSORIASIS_FIG_UKBB", "RA_consortium", "SBP_meta", "SCZ_consortium", "STROKE", "T1D", "T2D", "TC", "VTE_UKBB"
-# OUTCOME_TRAITS = ["IBS", "LDL", "MDD", "MS", "OA", "PD", "PNEUMONIA_FIG_UKBB", "PSORIASIS_FIG_UKBB", "RA_consortium", "SBP_meta", "SCZ_consortium", "STROKE", "T1D", "T2D", "TC", "VTE_UKBB"]
+
 OUTCOME_TRAITS = ["LOAD_consortium", "AD", "AF", "ASTHMA", "BIPOLAR", "BMD", "CAD_consortium", "COPD_FIG_UKBB", "DBP_meta", "eGFR", "EPILEPSY", "ENDOMETRIOSIS_FIG_UKBB", "GLAUCOMA", "IBD_consortium",
                   "IBS", "LDL", "MDD", "MS", "OA", "PD", "PNEUMONIA_FIG_UKBB", "PSORIASIS_FIG_UKBB", "RA_consortium", "SBP_meta", "SCZ_consortium", "STROKE", "T1D", "T2D", "TC", "VTE_UKBB"]
 
@@ -64,7 +63,7 @@ rule select_gwas_snps:
         nodes=1,
         cpus=1,
         mem="1GB"
-    shell: # put 1e-6 instead of 5e-8 as in cis. 
+    shell: # put 1e-6 instead of 5e-8 as in cis (+/- 1000000 bases around gene start and gene end). 
         """
         awk -v geneStart={params.gene_start_par} -v geneEnd={params.gene_end_par} -v OFS='\\t' '
             ($7 <= 1e-6) && ($9 >= (geneStart - 1000000)) && ($9 <= (geneEnd + 1000000)) {{

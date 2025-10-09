@@ -1,5 +1,7 @@
 ##########################################################################################
 ### Snakemake to extract IVs from UKB-PPP tsv.gz cis #####################################
+### Author: S. Moix, DBC, UNIL, 2025 #####################################################
+### Date: October 2025 ###################################################################
 ########################################################################################## 
 
 ################################################
@@ -11,12 +13,12 @@ import pandas as pd
 ### Setting paths  and parameters ##############
 
 # CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P EXTRA
-path_to_sumstat = "/.../"
+path_to_sumstat = "/.../" # Path to folder with Pharma proteomics project summary statistics (.gz) https://doi.org/10.7303/syn51364943
 # UKBPPP_ProteinID	olink_target_fullname	OlinkID	UniProt	Assay	Panel	Panel_Lot_Nr	
 # UniProt2	HGNC.symbol	ensembl_id	chr	gene_start	gene_end	Strand	Dilution_factor	block	expansion	rel_path
-path_to_protein_annotation = "/.../protein_annotation_3k_RP.tsv"
+path_to_protein_annotation = "/.../protein_annotation_3k_RP.tsv" # Run scripts/01_relative_path.py to obtain this file
 # ID	REF	ALT	rsid	POS19	POS38
-path_to_snp_info = "/.../"
+path_to_snp_info = "/.../" # Path to Pharma proteomics project snp info files (.gz) (olink_rsid_map...) https://doi.org/10.7303/syn51364943
 # Preffered output path
 path_to_output = "/.../"
 # UK10K data

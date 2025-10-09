@@ -1,5 +1,7 @@
 ############################################################################################################
-### Script to add the relative path column to the protein_annotation_3k.tsv file of the UKB PPP ############¨
+### Script to add the relative path column to the protein_annotation_3k.tsv file of the UKB PPP ############
+### Author: S. Moix, DBC, UNIL, 2025 #######################################################################
+### Date: October 2025 #####################################################################################
 ############################################################################################################
 
 ### Example
@@ -10,7 +12,7 @@
 import pandas as pd
 
 # Define the path to the input file
-path_to_protein_annotation = "/.../protein_annotation_3k.tsv"
+path_to_protein_annotation = "/.../protein_annotation_3k.tsv" # Path to the original protein annotation file https://doi.org/10.7303/syn51364943
 
 # Read the input file
 df = pd.read_csv(path_to_protein_annotation, sep='\t')
