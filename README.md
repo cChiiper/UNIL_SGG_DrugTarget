@@ -1,10 +1,10 @@
 Hey there, early bird!
 
-You’ve landed here a bit early — some of the scripts are still being polished and others will be added soon.
+You’ve landed here early — some of the scripts are still being polished and others will be added soon.
 If you’d like more details before the publication is out, feel free to contact me.
 This page will be updated over the coming weeks.
 
-🗓️ Last updated: October 9, 2025
+🗓️ Last updated: October 10, 2025
 
 # UNIL_SGG_DrugTarget
 Code accompanying the manuscript "Integration of genetic evidence to identify approved drug targets". 
@@ -30,14 +30,17 @@ The scripts folder contains the necessary code in R, Python, and Bash, with some
 
 #### 01_MR
 Contains scripts to perform Mendelian randomization (MR) to estimate the effect of protein expression on the 30 traits.
-- 01_Get_IVs: Contains scripts to select instrumental variables
-- 02_protein_to_trait: Contains scripts to run the MR analysis
+- 01_Get_IVs: Script to select instrumental variables
+- 02_protein_to_trait: Script to run the MR analysis
 
 #### 02_combine
-Contains the script to test the various integration method. 
+Contains the script to test the various integration methods. 
+- 01_aggregation.R: Script to combine the different prioritization methods  
+- 02_cross_trait.R: Script to perform cross trait analysis
 
 #### 03_benchmark
 This section is currently being updated and will be expanded over the next few days.
+- Will contain the scripts for performance evaluation and benchmarking (Jaccard Index, AUROC, t-test distribution, and OR curves)
 
 #### 04_rg_ldsc
 Contains the scripts to compute genetic correlation from [LDSC](https://github.com/bulik/ldsc)
