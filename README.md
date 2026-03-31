@@ -1,11 +1,3 @@
-Hey there, early bird!
-
-You’ve landed here early — some of the scripts are still being polished and others will be added soon.
-If you’d like more details before the publication is out, feel free to contact me.
-This page will be updated over the coming weeks.
-
-🗓️ Last updated: October 10, 2025
-
 # UNIL_SGG_DrugTarget
 Code accompanying the manuscript "Integration of genetic evidence to identify approved drug targets". 
 
@@ -35,12 +27,14 @@ Contains scripts to perform Mendelian randomization (MR) to estimate the effect 
 
 #### 02_combine
 Contains the script to test the various integration methods. 
-- 01_aggregation.R: Script to combine the different prioritization methods  
-- 02_cross_trait.R: Script to perform cross trait analysis
+- 01_aggregation.R: Script to combine the different prioritization methods (also includes OR calculation)
+- 02_cross_trait.R: Script to perform cross trait analysis (also includes benchmark)
 
 #### 03_benchmark
-This section is currently being updated and will be expanded over the next few days.
-- Will contain the scripts for performance evaluation and benchmarking (Jaccard Index, AUROC, t-test distribution, and OR curves)
+Contains standalone scripts to summarize key benchmarking metrics.
+- 01_delta_diff.R: Computes paired mean-rank differences against a baseline method
+- 02_roc_metrics.R: Computes AUROC values, ROC curve coordinates, and pdiff summaries
+- 03_jaccard_index.R: Computes pairwise Jaccard indices between trait drug target sets
 
 #### 04_rg_ldsc
 Contains the scripts to compute genetic correlation from [LDSC](https://github.com/bulik/ldsc)
